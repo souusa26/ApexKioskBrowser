@@ -15,6 +15,12 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Leitura e Provisionamento Zero-Touch do JSON no Armazenamento -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
 
     <!-- Serviços em Segundo Plano (Android 9 a 14+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -34,13 +40,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ApexKioskBrowser"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         tools:targetApi="34">
 
         <!-- Activity Principal: Modo Quiosque e WebView -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:launchMode="singleTask"
             android:screenOrientation="unspecified">
             
@@ -51,6 +58,12 @@
                 <!-- Categoria HOME para atuar como Launcher / Kiosk -->
                 <category android:name="android.intent.category.HOME" />
             </intent-filter>
+
+            <!-- Intent Filter para Importar Configurações Dinamicamente -->
+            <intent-filter>
+                <action android:name="com.apex.kiosk.ACTION_UPDATE_CONFIG" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- Activity de Configurações Protegida por PIN -->
@@ -60,7 +73,17 @@
             android:label="Configurações do Kiosk"
             android:theme="@style/Theme.ApexKioskBrowser" />
 
-        <!-- Servidor Web Remoto (Porta 2323 / Fully Kiosk REST API) -->
+        <!-- Serviço de Kiosk e Servidor Web Remoto (Porta 2323 / Fully Kiosk REST API) -->
+        <service
+            android:name=".server.KioskForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Embedded Kiosk Remote Administration and REST API Server" />
+        </service>
+
         <service
             android:name=".server.RemoteAdminService"
             android:enabled="true"
@@ -86,7 +109,20 @@
             </intent-filter>
         </receiver>
 
-        <!-- Inicialização no Boot do Android -->
+        <!-- Receptor Unificado de Boot e Conexão de Energia Veicular -->
+        <receiver
+            android:name=".receiver.BootAndPowerReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".receiver.BootReceiver"
             android:enabled="true"
@@ -96,7 +132,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Receptor de Conexão/Desconexão de Energia Veicular (Carregador / Ignição) -->
         <receiver
             android:name=".receiver.PowerConnectionReceiver"
             android:enabled="true"
