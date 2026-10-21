@@ -1,0 +1,11 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema Base sem ActionBar para Kiosk Fullscreen -->
+    <style name="Theme.ApexKioskBrowser" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/kiosk_bg</item>
+        <item name="android:navigationBarColor">@color/kiosk_bg</item>
+        <item name="android:windowBackground">@color/kiosk_bg</item>
+        <item name="colorPrimary">@color/kiosk_cyan</item>
+        <item name="colorSecondary">@color/kiosk_cyan</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/kiosk_card">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Acesso Restrito Kiosk"
+        android:textColor="@color/kiosk_cyan"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Digite o PIN de administrador para acessar as configurações ou sair do modo quiosque:"
+        android:textColor="@color/kiosk_text"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/editPin"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="#202636"
+        android:textColor="@color/white"
+        android:textColorHint="#707E94"
+        android:hint="••••"
+        android:inputType="numberPassword"
+        android:gravity="center"
+        android:textSize="22sp"
+        android:maxLength="8"
+        android:padding="10dp" />
+
+</LinearLayout>

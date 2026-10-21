@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/kiosk_bg"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Configurações do Kiosk"
+            android:textColor="@color/kiosk_cyan"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- URL Inicial -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="URL Inicial (Home Assistant / Dashboard)"
+            android:textColor="@color/kiosk_text"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/editStartUrl"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="18dp"
+            android:background="#1B2233"
+            android:hint="http://192.168.1.100:8123"
+            android:inputType="textUri"
+            android:padding="12dp"
+            android:textColor="@color/white"
+            android:textColorHint="#707E94" />
+
+        <!-- PIN de Segurança -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PIN de Bloqueio (4 a 8 dígitos)"
+            android:textColor="@color/kiosk_text"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/editKioskPin"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="18dp"
+            android:background="#1B2233"
+            android:hint="1234"
+            android:inputType="numberPassword"
+            android:padding="12dp"
+            android:textColor="@color/white"
+            android:textColorHint="#707E94" />
+
+        <!-- Switch Modo Quiosque -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchKioskMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Ativar Modo Quiosque (Lockdown)"
+            android:textColor="@color/kiosk_text"
+            android:textSize="16sp" />
+
+        <!-- Switch Manter Tela Ligada -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchKeepScreenOn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Manter Tela Sempre Ligada"
+            android:textColor="@color/kiosk_text"
+            android:textSize="16sp" />
+
+        <!-- Switch Servidor Remoto (Porta 2323) -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchRemoteAdmin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Servidor Remoto Ativo (Porta 2323)"
+            android:textColor="@color/kiosk_text"
+            android:textSize="16sp" />
+
+        <!-- Switch JavaScript Interface (window.fully) -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchJsInterface"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="Ativar Injeção JS (window.fully)"
+            android:textColor="@color/kiosk_text"
+            android:textSize="16sp" />
+
+        <!-- Botão Salvar -->
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="@color/kiosk_cyan"
+            android:text="Salvar e Aplicar"
+            android:textColor="@color/black"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Botão Sair do Kiosk -->
+        <Button
+            android:id="@+id/btnExitKiosk"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Sair do Aplicativo / Fechar"
+            android:textColor="#FF5252" />
+
+    </LinearLayout>
+</ScrollView>

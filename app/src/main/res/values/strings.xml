@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Apex Kiosk Browser</string>
+    <string name="device_admin_label">Administrador Apex Kiosk</string>
+    <string name="device_admin_description">Permite controle total de bloqueio quiosque, tela e políticas de sistema.</string>
+</resources>
