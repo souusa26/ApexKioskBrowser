@@ -2,7 +2,6 @@
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagDefault|flagRequestFilterKeyEvents"
-    android:canFilterKeyEvents="true"
     android:canRetrieveWindowContent="false"
     android:description="@string/device_admin_description"
     android:notificationTimeout="100" />
