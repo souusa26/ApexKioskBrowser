@@ -2,15 +2,18 @@ package com.apex.kiosk
 
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -19,11 +22,14 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.EditText
+import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.apex.kiosk.javascript.FullyJavascriptInterface
+import com.apex.kiosk.kiosk.ApexDeviceAdminReceiver
 import com.apex.kiosk.kiosk.KioskManager
 import com.apex.kiosk.server.RemoteAdminService
 import com.apex.kiosk.settings.AppSettings
@@ -33,12 +39,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var loadingProgress: ProgressBar
-    private lateinit var secretSettingsTrigger: View
+    private lateinit var btnKioskUnlock: FrameLayout
     private lateinit var settings: AppSettings
     private lateinit var kioskManager: KioskManager
-
-    private var tapCount = 0
-    private var lastTapTime = 0L
 
     private var remoteService: RemoteAdminService? = null
     private var isServiceBound = false
@@ -77,7 +80,6 @@ class MainActivity : AppCompatActivity() {
         settings = AppSettings(this)
         kioskManager = KioskManager(this)
 
-        // Configuração do Watchdog contra travamentos e crashes
         if (settings.watchdog) {
             setupCrashWatchdog()
         }
@@ -86,13 +88,16 @@ class MainActivity : AppCompatActivity() {
 
         webView = findViewById(R.id.webView)
         loadingProgress = findViewById(R.id.loadingProgress)
-        secretSettingsTrigger = findViewById(R.id.secretSettingsTrigger)
+        btnKioskUnlock = findViewById(R.id.btnKioskUnlock)
 
-        setupSecretSettingsTrigger()
+        btnKioskUnlock.setOnClickListener {
+            showKioskPinKeypad()
+        }
+
         configureWebView()
         kioskManager.applyKioskPolicies()
+        checkKioskPermissionsOnboarding()
 
-        // Inicia o serviço em segundo plano para Administração Remota (Porta 2323)
         if (settings.remoteAdmin) {
             val serviceIntent = Intent(this, RemoteAdminService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -103,7 +108,6 @@ class MainActivity : AppCompatActivity() {
             bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
 
-        // Registra receptor para escurecer a tela ao desconectar a ignição do veículo
         val filter = IntentFilter(ACTION_DIM_SCREEN)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(dimScreenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -130,7 +134,6 @@ class MainActivity : AppCompatActivity() {
     private fun configureWebView() {
         val webSettings = webView.settings
 
-        // Habilita JavaScript e recursos modernos
         webSettings.javaScriptEnabled = true
         webSettings.domStorageEnabled = true
         webSettings.databaseEnabled = true
@@ -138,7 +141,6 @@ class MainActivity : AppCompatActivity() {
         webSettings.allowFileAccess = true
         webSettings.allowContentAccess = true
 
-        // Cache Offline
         if (settings.enableOfflineCache) {
             webSettings.cacheMode = WebSettings.LOAD_DEFAULT
         } else {
@@ -149,7 +151,6 @@ class MainActivity : AppCompatActivity() {
             webView.clearCache(true)
         }
 
-        // Injeção da API window.fully (compatível com Fully Kiosk)
         webView.addJavascriptInterface(
             FullyJavascriptInterface(this, webView),
             "fully"
@@ -157,12 +158,27 @@ class MainActivity : AppCompatActivity() {
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                return false // Mantém a navegação sempre dentro do WebView
+                return false
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 loadingProgress.visibility = View.GONE
+
+                // Bypass automático da tela de aviso do ngrok gratuito
+                val ngrokBypassScript = """
+                    (function() {
+                        var buttons = document.querySelectorAll('button, a');
+                        for (var i = 0; i < buttons.length; i++) {
+                            var text = buttons[i].innerText || buttons[i].textContent;
+                            if (text && text.toLowerCase().indexOf('visit site') !== -1) {
+                                buttons[i].click();
+                                break;
+                            }
+                        }
+                    })();
+                """.trimIndent()
+                view?.evaluateJavascript(ngrokBypassScript, null)
             }
         }
 
@@ -177,48 +193,138 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Carrega a URL inicial de produção configurada no perfil
-        webView.loadUrl(settings.startUrl)
+        // Carrega com header para pular a tela de aviso do ngrok
+        val headers = mapOf("ngrok-skip-browser-warning" to "true")
+        webView.loadUrl(settings.startUrl, headers)
     }
 
-    private fun setupSecretSettingsTrigger() {
-        // Toque 4 vezes rapidamente no canto superior direito para abrir o diálogo de PIN
-        secretSettingsTrigger.setOnClickListener {
-            val now = System.currentTimeMillis()
-            if (now - lastTapTime < 800) {
-                tapCount++
-                if (tapCount >= 4) {
-                    tapCount = 0
-                    showPinDialog()
-                }
-            } else {
-                tapCount = 1
-            }
-            lastTapTime = now
-        }
-    }
+    // ========================================================
+    // TECLADO TOUCH DE PIN (ESTILO FULLY KIOSK)
+    // ========================================================
+    private fun showKioskPinKeypad() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_kiosk_pin, null)
+        val txtDisplay = dialogView.findViewById<TextView>(R.id.txtPinDisplay)
+        var currentPin = ""
 
-    private fun showPinDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_pin, null)
-        val editPin = dialogView.findViewById<EditText>(R.id.editPin)
-
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .setCancelable(true)
-            .setPositiveButton("Acessar") { dialog, _ ->
-                val inputPin = editPin.text.toString().trim()
-                if (inputPin == settings.kioskPin) {
-                    dialog.dismiss()
-                    startActivity(Intent(this, SettingsActivity::class.java))
-                } else {
-                    Toast.makeText(this, "PIN Incorreto!", Toast.LENGTH_SHORT).show()
-                }
+            .create()
+
+        val updateDisplay = {
+            txtDisplay.text = if (currentPin.isEmpty()) "••••" else "• ".repeat(currentPin.length).trim()
+        }
+
+        val appendDigit = { digit: String ->
+            if (currentPin.length < 8) {
+                currentPin += digit
+                updateDisplay()
             }
-            .setNegativeButton("Cancelar") { dialog, _ ->
+        }
+
+        dialogView.findViewById<Button>(R.id.btn1).setOnClickListener { appendDigit("1") }
+        dialogView.findViewById<Button>(R.id.btn2).setOnClickListener { appendDigit("2") }
+        dialogView.findViewById<Button>(R.id.btn3).setOnClickListener { appendDigit("3") }
+        dialogView.findViewById<Button>(R.id.btn4).setOnClickListener { appendDigit("4") }
+        dialogView.findViewById<Button>(R.id.btn5).setOnClickListener { appendDigit("5") }
+        dialogView.findViewById<Button>(R.id.btn6).setOnClickListener { appendDigit("6") }
+        dialogView.findViewById<Button>(R.id.btn7).setOnClickListener { appendDigit("7") }
+        dialogView.findViewById<Button>(R.id.btn8).setOnClickListener { appendDigit("8") }
+        dialogView.findViewById<Button>(R.id.btn9).setOnClickListener { appendDigit("9") }
+        dialogView.findViewById<Button>(R.id.btn0).setOnClickListener { appendDigit("0") }
+
+        dialogView.findViewById<Button>(R.id.btnClear).setOnClickListener {
+            if (currentPin.isNotEmpty()) {
+                currentPin = currentPin.dropLast(1)
+                updateDisplay()
+            }
+        }
+
+        dialogView.findViewById<Button>(R.id.btnOk).setOnClickListener {
+            if (currentPin == settings.kioskPin) {
                 dialog.dismiss()
-                kioskManager.applyFullscreenAndBars()
+                showAdminMenu()
+            } else {
+                Toast.makeText(this, "PIN Incorreto!", Toast.LENGTH_SHORT).show()
+                currentPin = ""
+                updateDisplay()
             }
-            .show()
+        }
+
+        dialog.show()
+    }
+
+    // ========================================================
+    // MENU ADMINISTRATIVO DE DESBLOQUEIO
+    // ========================================================
+    private fun showAdminMenu() {
+        val menuView = layoutInflater.inflate(R.layout.dialog_admin_menu, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(menuView)
+            .setCancelable(true)
+            .create()
+
+        menuView.findViewById<Button>(R.id.btnMenuReload).setOnClickListener {
+            dialog.dismiss()
+            val headers = mapOf("ngrok-skip-browser-warning" to "true")
+            webView.loadUrl(settings.startUrl, headers)
+            kioskManager.applyKioskPolicies()
+        }
+
+        menuView.findViewById<Button>(R.id.btnMenuSettings).setOnClickListener {
+            dialog.dismiss()
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        menuView.findViewById<Button>(R.id.btnMenuClearCache).setOnClickListener {
+            webView.clearCache(true)
+            Toast.makeText(this, "Cache limpo!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+            kioskManager.applyKioskPolicies()
+        }
+
+        menuView.findViewById<Button>(R.id.btnMenuExitKiosk).setOnClickListener {
+            dialog.dismiss()
+            settings.kioskMode = false
+            kioskManager.stopLockTaskIfRunning()
+            finishAffinity()
+        }
+
+        menuView.findViewById<Button>(R.id.btnMenuCancel).setOnClickListener {
+            dialog.dismiss()
+            kioskManager.applyKioskPolicies()
+        }
+
+        dialog.show()
+    }
+
+    // ========================================================
+    // ONBOARDING DE PERMISSÕES PARA BLOQUEIO TOTAL
+    // ========================================================
+    private fun checkKioskPermissionsOnboarding() {
+        if (!settings.kioskMode) return
+
+        // 1. Sobreposição de tela (SYSTEM_ALERT_WINDOW)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            Toast.makeText(this, "Ative a Sobreposição para o Kiosk bloquear a tela", Toast.LENGTH_LONG).show()
+            try { startActivity(intent) } catch (_: Exception) {}
+            return
+        }
+
+        // 2. Administrador do Dispositivo
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val adminComponent = ComponentName(this, ApexDeviceAdminReceiver::class.java)
+        if (!dpm.isAdminActive(adminComponent)) {
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Ative o Administrador para bloquear o aparelho")
+            }
+            try { startActivity(intent) } catch (_: Exception) {}
+        }
     }
 
     // Interceptação dos Botões Físicos de Volume (Veicular)
@@ -228,14 +334,12 @@ class MainActivity : AppCompatActivity() {
                 KeyEvent.KEYCODE_VOLUME_UP,
                 KeyEvent.KEYCODE_VOLUME_DOWN,
                 KeyEvent.KEYCODE_VOLUME_MUTE -> {
-                    return true // Bloqueia e consome o evento de volume
+                    return true
                 }
             }
         }
         return super.dispatchKeyEvent(event)
     }
-
-
 
     // Bloqueia o botão Voltar do Android quando em Modo Quiosque
     @Deprecated("Deprecated in Java")
@@ -244,7 +348,6 @@ class MainActivity : AppCompatActivity() {
             if (webView.canGoBack()) {
                 webView.goBack()
             }
-            // Não fecha a Activity
             return
         }
         super.onBackPressed()
@@ -254,7 +357,6 @@ class MainActivity : AppCompatActivity() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             throwable.printStackTrace()
-            // Reinicia imediatamente o app em caso de crash
             val intent = packageManager.getLaunchIntentForPackage(packageName)
             intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             startActivity(intent)
