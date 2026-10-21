@@ -235,6 +235,7 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchKeyEvent(event)
     }
 
+
     // Bloqueia o botão Voltar do Android quando em Modo Quiosque
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
