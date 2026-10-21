@@ -1,89 +1,148 @@
-# Apex Kiosk Browser 📱🚗 (Clone Nativo do Fully Kiosk)
+# Apex Kiosk Browser 📱🚗 (Clean-Room Fully Kiosk Parity)
 
-Implementação nativa limpa (*clean-room*) do **Fully Kiosk Browser** para Android, desenvolvida em **Kotlin** e especificamente calibrada para tablets veiculares e quiosques comerciais.
+Implementação nativa limpa (*clean-room*) do **Fully Kiosk Browser** para Android, desenvolvida em **Kotlin** e arquitetada para operação contínua em **tablets veiculares, embarcados, COSU (Corporate-Owned, Single-Use) e Digital Signage**.
 
-O aplicativo já vem pré-configurado com o perfil de produção:
-`"Configuração de Produção para Tablets Veiculares - Tela Livre"`
-
----
-
-## 📋 Mapeamento Exato do Perfil JSON Implementado
-
-| Parâmetro no JSON | Valor | Como Funciona no App |
-| :--- | :--- | :--- |
-| `startURL` | `https://vividness-reggae-sizably.ngrok-free.dev/player/` | Carregado automaticamente no `WebView` no startup |
-| `kioskMode` | `true` | Ativa o bloqueio quiosque (`startLockTask()` / `KioskManager`), impedindo a saída do app |
-| `kioskPin` | `"2609"` | PIN obrigatório para abrir as configurações ou desativar o quiosque |
-| `autostart` | `true` | Inicia automaticamente assim que o tablet liga (`BootReceiver`) |
-| `autostartOnPower` | `true` | Abre o app instantaneamente ao plugar o carregador veicular / ligar a chave do carro |
-| `turnScreenOnOnPowerConnected` | `true` | Acorda a tela (`ACQUIRE_CAUSES_WAKEUP`) ao ligar o carro |
-| `turnScreenOffOnPowerDisconnected` | `true` | Escurece / desliga a tela ao desligar o carro, economizando a bateria do veículo |
-| `keepScreenOn` | `true` | `FLAG_KEEP_SCREEN_ON` para a tela nunca apagar durante o trajeto |
-| `showActionBar` | `false` | Barra superior de título completamente removida (`NoActionBar`) |
-| `showStatusBar` | `false` | Barra de status (relógio, bateria, notificações) 100% oculta via `WindowInsetsControllerCompat` |
-| `showNavigationBar` | `false` | Barra de navegação inferior (Voltar, Home, Recentes) 100% oculta |
-| `enableVolumeButtons` | `false` | Bloqueia fisicamente os botões de volume (`KeyEvent.KEYCODE_VOLUME_*`) para evitar alterações por passageiros |
-| `preventSleep` | `true` | Adquire `PowerManager.PARTIAL_WAKE_LOCK` contínuo em background |
-| `showFullscreen` | `true` | Modo imersivo pegajoso (`BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`) ocupando 100% dos pixels do display |
-| `watchdog` | `true` | Monitor de falhas (`UncaughtExceptionHandler`): se o app travar ou fechar inesperadamente, ele reinicia sozinho em milissegundos |
-| `remoteAdmin` | `true` | Roda um servidor HTTP embutido em segundo plano via `RemoteAdminService` |
-| `remoteAdminPort` | `2323` | Porta padrão compatível com Fully Kiosk e Home Assistant (`http://[IP_DO_TABLET]:2323`) |
-| `remoteAdminPassword` | `"admin"` | Autenticação para comandos remotos |
-| `enableWifiWakelock` | `true` | `WifiManager.createWifiLock(WIFI_MODE_FULL_HIGH_PERF)` para o Wi-Fi nunca entrar em economia de energia |
-| `clearCacheOnStart` | `false` | Preserva os dados do player em cache para inicialização ultrarrápida |
-| `enableOfflineCache` | `true` | Ativa `WebSettings.LOAD_DEFAULT`, `domStorageEnabled` e `databaseEnabled` para reprodução offline |
+O aplicativo consome nativamente o perfil de provisionamento zero-touch **`fully-auto-settings.json`** e implementa 100% dos controles nativos de bloqueio, energia e administração remota.
 
 ---
 
-## 🛠️ Como Acessar o Menu Secreto no Tablet
+## 🏛️ Arquitetura do Sistema
 
-1. Dê **4 toques rápidos no canto superior direito da tela** (onde ficaria o relógio).
-2. Uma caixa solicitará o **PIN do Administrador**.
-3. Digite `2609` e clique em **Acessar**.
-4. Você terá acesso à tela de configurações para alterar a URL, o PIN ou sair do aplicativo.
+A arquitetura do `ApexKioskBrowser` é dividida em módulos desacoplados orientados a eventos de hardware e conectividade:
 
----
-
-## 🌐 Comandos Remotos Compatíveis (Porta 2323)
-
-Você pode controlar o tablet pelo navegador do seu computador ou integrar com o Home Assistant:
-
-- **Painel Web:** Acesse `http://[IP_DO_TABLET]:2323/`
-- **Ligar Tela:** `http://[IP_DO_TABLET]:2323/?cmd=screenOn&password=admin`
-- **Desligar Tela:** `http://[IP_DO_TABLET]:2323/?cmd=screenOff&password=admin`
-- **Status da Bateria e Tela (JSON):** `http://[IP_DO_TABLET]:2323/?cmd=getDeviceInfo&password=admin`
-- **Trocar URL:** `http://[IP_DO_TABLET]:2323/?cmd=loadURL&url=https://outraurl.com&password=admin`
-- **Reiniciar App:** `http://[IP_DO_TABLET]:2323/?cmd=restartApp&password=admin`
-
----
-
-## 📱 Injeção JavaScript (`window.fully`)
-
-Qualquer página HTML/JS executada dentro do WebView pode controlar o tablet usando os mesmos comandos do Fully Kiosk:
-
-```javascript
-// Exemplos de chamadas JavaScript direto na sua página do player:
-console.log("Bateria: " + window.fully.getBatteryLevel() + "%");
-console.log("Conectado ao carregador: " + window.fully.isPlugged());
-console.log("IP do Tablet: " + window.fully.getIp4Address());
-
-// Acordar a tela ou ajustar o brilho
-window.fully.turnScreenOn();
-window.fully.setScreenBrightness(255); // Brilho máximo
+```
+                +---------------------------------------+
+                |        fully-auto-settings.json       |
+                | (SDCard / Downloads / Files / Assets) |
+                +-------------------+-------------------+
+                                    |
+                            [ConfigManager]
+                                    |
+          +-------------------------+-------------------------+
+          |                         |                         |
+[KioskManager]             [MainActivity]           [KioskForegroundService]
+- LockTask (Device Owner)  - HTML5 & Fullscreen Vid  - Persistência START_STICKY
+- Sticky Immersive Mode    - Offline Cache Resilience- Servidor NanoHTTPD :2323
+- DispatchKeyEvent Block   - Touch PIN Keypad (2609) - High-Perf WifiLock
+- Screen Wake / LockNow    - Crash Watchdog Restart  - Watchdog Top-App Loop
+          ^                         ^                         ^
+          |                         |                         |
+          +-------------------------+-------------------------+
+                                    |
+                        [BootAndPowerReceiver]
+             - BOOT_COMPLETED & QUICKBOOT_POWERON
+             - ACTION_POWER_CONNECTED (Acorda tela)
+             - ACTION_POWER_DISCONNECTED (lockNow)
 ```
 
 ---
 
-## 🚀 Como Gerar o APK (.apk)
+## 📋 Mapeamento Exato do Perfil JSON (`fully-auto-settings.json`)
 
-1. Abra a pasta `ApexKioskBrowser` no **Android Studio** (ou use a linha de comando com `gradlew assembleRelease` / `gradlew assembleDebug`).
-2. O APK final será gerado em:
-   `app/build/outputs/apk/debug/app-debug.apk` ou `app-release.apk`
-3. Instale no seu tablet com o comando:
-   ```bash
-   adb install -r app-debug.apk
-   ```
-4. *(Opcional)* Para ativar o modo quiosque à prova de evasão (Device Owner via ADB):
-   ```bash
-   adb shell dpm set-device-owner com.apex.kiosk/.kiosk.ApexDeviceAdminReceiver
-   ```
+```json
+{
+  "startURL": "https://vividness-reggae-sizably.ngrok-free.dev/player/",
+  "kioskMode": true,
+  "kioskPin": "2609",
+  "autostart": true,
+  "autostartOnPower": true,
+  "turnScreenOnOnPowerConnected": true,
+  "turnScreenOffOnPowerDisconnected": true,
+  "keepScreenOn": true,
+  "showActionBar": false,
+  "showStatusBar": false,
+  "showNavigationBar": false,
+  "enableVolumeButtons": false,
+  "preventSleep": true,
+  "showFullscreen": true,
+  "watchdog": true,
+  "remoteAdmin": true,
+  "remoteAdminPort": 2323,
+  "remoteAdminPassword": "admin",
+  "enableWifiWakelock": true,
+  "clearCacheOnStart": false,
+  "enableOfflineCache": true,
+  "description": "Configuração de Produção para Tablets Veiculares - Tela Livre"
+}
+```
+
+### Ordem de Descoberta Zero-Touch do JSON
+Ao iniciar, o `ConfigManager` procura o arquivo na seguinte ordem:
+1. **Armazenamento Externo / Raiz:** `/sdcard/fully-auto-settings.json`, `/storage/emulated/0/Download/fully-auto-settings.json`
+2. **Diretório do App:** `context.getExternalFilesDir(null)/fully-auto-settings.json`
+3. **Persistência Interna Ativa:** `context.filesDir/active_kiosk_config.json`
+4. **Fallback de Fábrica Embutido no APK:** `assets/fully-auto-settings.json`
+
+---
+
+## ⚡ Comportamento Nativo de Energia Veicular
+
+| Evento | Flag JSON | Ação Executada |
+| :--- | :--- | :--- |
+| **Inicialização do Aparelho** | `autostart: true` | Inicia o app automaticamente no boot (`BOOT_COMPLETED` e `QUICKBOOT_POWERON`). |
+| **Ignição / Carregador Conectado** | `autostartOnPower: true`<br>`turnScreenOnOnPowerConnected: true` | Dispara `PowerManager.WakeLock` (`ACQUIRE_CAUSES_WAKEUP | SCREEN_BRIGHT_WAKE_LOCK`), ativa `FLAG_KEEP_SCREEN_ON` e traz a `MainActivity` para a frente. |
+| **Ignição Desligada / USB Desconectada** | `turnScreenOffOnPowerDisconnected: true` | Bloqueia a tela instantaneamente via `DevicePolicyManager.lockNow()` (se Device Owner) ou reduz o brilho da janela ao mínimo com liberação de wake locks. |
+| **Prevenção de Suspensão** | `keepScreenOn: true`<br>`preventSleep: true` | Mantém a janela com `FLAG_KEEP_SCREEN_ON` e adquire um `PARTIAL_WAKE_LOCK` em segundo plano. |
+
+---
+
+## 🔒 Lockdown e Desbloqueio com PIN
+
+1. **Launcher Principal do Sistema:** O app declara `<category android:name="android.intent.category.HOME" />`, podendo ser selecionado como o Launcher padrão do Android.
+2. **Modo Imersivo Sticky:** Status bar, Navigation bar e Action bar são 100% ocultadas.
+3. **Bloqueio de Teclas Físicas:** Quando `enableVolumeButtons == false` e `kioskMode == true`, as teclas de Volume + e Volume - e a tecla Voltar são completamente interceptadas e descartadas no `dispatchKeyEvent`.
+4. **Desbloqueio Seguro (Gesto ou Botão Flutuante):**
+   - **Gesto Oculto:** Dê **7 toques rápidos no canto superior esquerdo ou inferior direito**.
+   - **Botão Flutuante:** Toque no botão circular âmbar de cadeado no canto superior direito.
+   - Digite o PIN configurado (`2609`) no teclado numérico touch screen.
+   - Ao autenticar com sucesso, o app executa `stopLockTask()` e abre o painel administrativo (Recarregar, Configurações, Limpar Cache, Sair do Modo Quiosque).
+
+---
+
+## 🛡️ Ativação do Modo Device Owner (Bloqueio 100% Inviolável)
+
+Para que o tablet não permita que nenhum usuário saia do app de forma alguma (desativando o botão Home, barra de notificações e menus de sistema):
+
+1. Habilite a **Depuração USB** nas Opções do Desenvolvedor do Android.
+2. No computador, execute via terminal/prompt de comando:
+```bash
+adb shell dpm set-device-owner com.apex.kiosk/.kiosk.ApexDeviceAdminReceiver
+```
+> **Nota:** No Android puro, o comando deve ser executado antes de adicionar contas pessoais do Google no aparelho (ou após um factory reset). Se não for possível ativar como Device Owner, o app operará via Screen Pinning nativo + Interceptação de foco e Serviço de Acessibilidade.
+
+---
+
+## 🌐 Administração Remota e Endpoints REST (Porta 2323)
+
+O servidor embutido **NanoHTTPD** roda no `KioskForegroundService` na porta 2323:
+
+- **Painel Web HTML:** `http://[IP_DO_TABLET]:2323/` (Exibe status de bateria, carregador, URL e botões de ação).
+- **Voltar para a StartURL:**
+  `GET /?cmd=loadStartUrl&password=admin`
+- **Recarregar Página:**
+  `GET /?cmd=reload&password=admin`
+- **Carregar Nova URL em Tempo Real:**
+  `GET /?cmd=loadUrl&url=https://outrolink.com&password=admin`
+- **Limpar Cache da WebView:**
+  `GET /?cmd=clearCache&password=admin`
+- **Ligar a Tela:**
+  `GET /?cmd=screenOn&password=admin`
+- **Desligar a Tela:**
+  `GET /?cmd=screenOff&password=admin`
+- **Exportar Configuração Atual (JSON):**
+  `GET /?cmd=getConfig&password=admin`
+- **Atualizar Configuração Dinamicamente (Zero-Touch via REST):**
+  `POST /?cmd=setConfig&password=admin` (com o novo JSON no corpo da requisição).
+- **Status do Dispositivo (JSON):**
+  `GET /?cmd=getDeviceInfo&password=admin`
+
+---
+
+## 🛠️ Como Compilar o APK
+
+Para compilar via linha de comando local ou em CI:
+```bash
+./gradlew assembleDebug
+```
+O arquivo APK gerado estará em:
+`app/build/outputs/apk/debug/app-debug.apk`
