@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#131722">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔒 Desbloqueio Kiosk"
+        android:textColor="#00E5FF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Digite o PIN para liberar o sistema:"
+        android:textColor="#94A3B8"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="14dp" />
+
+    <TextView
+        android:id="@+id/txtPinDisplay"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#1E293B"
+        android:textColor="#FFFFFF"
+        android:text="••••"
+        android:textSize="24sp"
+        android:letterSpacing="0.4"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Teclado Numérico Touch Screen -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:alignmentMode="alignMargins"
+        android:useDefaultMargins="true">
+
+        <Button android:id="@+id/btn1" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="1" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn2" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="2" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn3" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="3" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+
+        <Button android:id="@+id/btn4" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="4" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn5" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="5" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn6" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="6" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+
+        <Button android:id="@+id/btn7" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="7" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn8" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="8" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn9" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="9" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+
+        <Button android:id="@+id/btnClear" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="⌫" android:textColor="#EF4444" android:textSize="18sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btn0" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="0" android:textColor="#FFF" android:textSize="20sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+        <Button android:id="@+id/btnOk" style="@style/Widget.MaterialComponents.Button.TextButton" android:text="OK" android:textColor="#00E5FF" android:textStyle="bold" android:textSize="18sp" android:layout_width="0dp" android:layout_columnWeight="1" />
+    </GridLayout>
+
+</LinearLayout>
