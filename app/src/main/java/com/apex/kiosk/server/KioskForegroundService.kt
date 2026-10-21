@@ -29,7 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class KioskForegroundService : Service(), ConfigManager.OnConfigChangeListener {
+open class KioskForegroundService : Service(), ConfigManager.OnConfigChangeListener {
 
     private val binder = LocalBinder()
     private var httpServer: KioskHttpServer? = null
