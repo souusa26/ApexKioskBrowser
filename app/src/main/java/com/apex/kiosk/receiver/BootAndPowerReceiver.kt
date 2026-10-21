@@ -12,7 +12,7 @@ import com.apex.kiosk.MainActivity
 import com.apex.kiosk.kiosk.ApexDeviceAdminReceiver
 import com.apex.kiosk.settings.AppSettings
 
-class BootAndPowerReceiver : BroadcastReceiver() {
+open class BootAndPowerReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
