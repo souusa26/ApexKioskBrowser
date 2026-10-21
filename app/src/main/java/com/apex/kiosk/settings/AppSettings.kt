@@ -1,142 +1,169 @@
 package com.apex.kiosk.settings
 
 import android.content.Context
-import android.content.SharedPreferences
-import org.json.JSONObject
-import java.io.InputStreamReader
 
-class AppSettings(private val context: Context) {
+class AppSettings(context: Context) {
 
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences("apex_kiosk_prefs", Context.MODE_PRIVATE)
+    private val configManager = ConfigManager.getInstance(context)
 
-    init {
-        // Se for a primeira inicialização, carrega o default_config.json dos assets
-        if (!prefs.contains("initialized")) {
-            loadFromDefaultAsset()
-        }
-    }
+    val config: KioskConfig
+        get() = configManager.currentConfig
 
-    private fun loadFromDefaultAsset() {
-        try {
-            val inputStream = context.assets.open("default_config.json")
-            val jsonStr = InputStreamReader(inputStream).readText()
-            inputStream.close()
-            importFromJson(JSONObject(jsonStr))
-            prefs.edit().putBoolean("initialized", true).apply()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    fun importFromJson(json: JSONObject) {
-        val editor = prefs.edit()
-        if (json.has("startURL")) editor.putString("startURL", json.getString("startURL"))
-        if (json.has("kioskMode")) editor.putBoolean("kioskMode", json.getBoolean("kioskMode"))
-        if (json.has("kioskPin")) editor.putString("kioskPin", json.getString("kioskPin"))
-        if (json.has("autostart")) editor.putBoolean("autostart", json.getBoolean("autostart"))
-        if (json.has("autostartOnPower")) editor.putBoolean("autostartOnPower", json.getBoolean("autostartOnPower"))
-        if (json.has("turnScreenOnOnPowerConnected")) editor.putBoolean("turnScreenOnOnPowerConnected", json.getBoolean("turnScreenOnOnPowerConnected"))
-        if (json.has("turnScreenOffOnPowerDisconnected")) editor.putBoolean("turnScreenOffOnPowerDisconnected", json.getBoolean("turnScreenOffOnPowerDisconnected"))
-        if (json.has("keepScreenOn")) editor.putBoolean("keepScreenOn", json.getBoolean("keepScreenOn"))
-        if (json.has("showActionBar")) editor.putBoolean("showActionBar", json.getBoolean("showActionBar"))
-        if (json.has("showStatusBar")) editor.putBoolean("showStatusBar", json.getBoolean("showStatusBar"))
-        if (json.has("showNavigationBar")) editor.putBoolean("showNavigationBar", json.getBoolean("showNavigationBar"))
-        if (json.has("enableVolumeButtons")) editor.putBoolean("enableVolumeButtons", json.getBoolean("enableVolumeButtons"))
-        if (json.has("preventSleep")) editor.putBoolean("preventSleep", json.getBoolean("preventSleep"))
-        if (json.has("showFullscreen")) editor.putBoolean("showFullscreen", json.getBoolean("showFullscreen"))
-        if (json.has("watchdog")) editor.putBoolean("watchdog", json.getBoolean("watchdog"))
-        if (json.has("remoteAdmin")) editor.putBoolean("remoteAdmin", json.getBoolean("remoteAdmin"))
-        if (json.has("remoteAdminPort")) editor.putInt("remoteAdminPort", json.getInt("remoteAdminPort"))
-        if (json.has("remoteAdminPassword")) editor.putString("remoteAdminPassword", json.getString("remoteAdminPassword"))
-        if (json.has("enableWifiWakelock")) editor.putBoolean("enableWifiWakelock", json.getBoolean("enableWifiWakelock"))
-        if (json.has("clearCacheOnStart")) editor.putBoolean("clearCacheOnStart", json.getBoolean("clearCacheOnStart"))
-        if (json.has("enableOfflineCache")) editor.putBoolean("enableOfflineCache", json.getBoolean("enableOfflineCache"))
-        if (json.has("description")) editor.putString("description", json.getString("description"))
-        editor.apply()
+    fun reload() {
+        configManager.loadInitialConfig()
     }
 
     var startUrl: String
-        get() = prefs.getString("startURL", "https://vividness-reggae-sizably.ngrok-free.dev/player/") ?: "https://vividness-reggae-sizably.ngrok-free.dev/player/"
-        set(value) = prefs.edit().putString("startURL", value).apply()
+        get() = config.startURL
+        set(value) {
+            config.startURL = value
+            configManager.updateConfig(config)
+        }
 
     var kioskMode: Boolean
-        get() = prefs.getBoolean("kioskMode", true)
-        set(value) = prefs.edit().putBoolean("kioskMode", value).apply()
+        get() = config.kioskMode
+        set(value) {
+            config.kioskMode = value
+            configManager.updateConfig(config)
+        }
 
     var kioskPin: String
-        get() = prefs.getString("kioskPin", "2609") ?: "2609"
-        set(value) = prefs.edit().putString("kioskPin", value).apply()
+        get() = config.kioskPin
+        set(value) {
+            config.kioskPin = value
+            configManager.updateConfig(config)
+        }
 
     var autostart: Boolean
-        get() = prefs.getBoolean("autostart", true)
-        set(value) = prefs.edit().putBoolean("autostart", value).apply()
+        get() = config.autostart
+        set(value) {
+            config.autostart = value
+            configManager.updateConfig(config)
+        }
 
     var autostartOnPower: Boolean
-        get() = prefs.getBoolean("autostartOnPower", true)
-        set(value) = prefs.edit().putBoolean("autostartOnPower", value).apply()
+        get() = config.autostartOnPower
+        set(value) {
+            config.autostartOnPower = value
+            configManager.updateConfig(config)
+        }
 
     var turnScreenOnOnPowerConnected: Boolean
-        get() = prefs.getBoolean("turnScreenOnOnPowerConnected", true)
-        set(value) = prefs.edit().putBoolean("turnScreenOnOnPowerConnected", value).apply()
+        get() = config.turnScreenOnOnPowerConnected
+        set(value) {
+            config.turnScreenOnOnPowerConnected = value
+            configManager.updateConfig(config)
+        }
 
     var turnScreenOffOnPowerDisconnected: Boolean
-        get() = prefs.getBoolean("turnScreenOffOnPowerDisconnected", true)
-        set(value) = prefs.edit().putBoolean("turnScreenOffOnPowerDisconnected", value).apply()
+        get() = config.turnScreenOffOnPowerDisconnected
+        set(value) {
+            config.turnScreenOffOnPowerDisconnected = value
+            configManager.updateConfig(config)
+        }
 
     var keepScreenOn: Boolean
-        get() = prefs.getBoolean("keepScreenOn", true)
-        set(value) = prefs.edit().putBoolean("keepScreenOn", value).apply()
+        get() = config.keepScreenOn
+        set(value) {
+            config.keepScreenOn = value
+            configManager.updateConfig(config)
+        }
 
     var showActionBar: Boolean
-        get() = prefs.getBoolean("showActionBar", false)
-        set(value) = prefs.edit().putBoolean("showActionBar", value).apply()
+        get() = config.showActionBar
+        set(value) {
+            config.showActionBar = value
+            configManager.updateConfig(config)
+        }
 
     var showStatusBar: Boolean
-        get() = prefs.getBoolean("showStatusBar", false)
-        set(value) = prefs.edit().putBoolean("showStatusBar", value).apply()
+        get() = config.showStatusBar
+        set(value) {
+            config.showStatusBar = value
+            configManager.updateConfig(config)
+        }
 
     var showNavigationBar: Boolean
-        get() = prefs.getBoolean("showNavigationBar", false)
-        set(value) = prefs.edit().putBoolean("showNavigationBar", value).apply()
+        get() = config.showNavigationBar
+        set(value) {
+            config.showNavigationBar = value
+            configManager.updateConfig(config)
+        }
 
     var enableVolumeButtons: Boolean
-        get() = prefs.getBoolean("enableVolumeButtons", false)
-        set(value) = prefs.edit().putBoolean("enableVolumeButtons", value).apply()
+        get() = config.enableVolumeButtons
+        set(value) {
+            config.enableVolumeButtons = value
+            configManager.updateConfig(config)
+        }
 
     var preventSleep: Boolean
-        get() = prefs.getBoolean("preventSleep", true)
-        set(value) = prefs.edit().putBoolean("preventSleep", value).apply()
+        get() = config.preventSleep
+        set(value) {
+            config.preventSleep = value
+            configManager.updateConfig(config)
+        }
 
     var showFullscreen: Boolean
-        get() = prefs.getBoolean("showFullscreen", true)
-        set(value) = prefs.edit().putBoolean("showFullscreen", value).apply()
+        get() = config.showFullscreen
+        set(value) {
+            config.showFullscreen = value
+            configManager.updateConfig(config)
+        }
 
     var watchdog: Boolean
-        get() = prefs.getBoolean("watchdog", true)
-        set(value) = prefs.edit().putBoolean("watchdog", value).apply()
+        get() = config.watchdog
+        set(value) {
+            config.watchdog = value
+            configManager.updateConfig(config)
+        }
 
     var remoteAdmin: Boolean
-        get() = prefs.getBoolean("remoteAdmin", true)
-        set(value) = prefs.edit().putBoolean("remoteAdmin", value).apply()
+        get() = config.remoteAdmin
+        set(value) {
+            config.remoteAdmin = value
+            configManager.updateConfig(config)
+        }
 
     var remoteAdminPort: Int
-        get() = prefs.getInt("remoteAdminPort", 2323)
-        set(value) = prefs.edit().putInt("remoteAdminPort", value).apply()
+        get() = config.remoteAdminPort
+        set(value) {
+            config.remoteAdminPort = value
+            configManager.updateConfig(config)
+        }
 
     var remoteAdminPassword: String
-        get() = prefs.getString("remoteAdminPassword", "admin") ?: "admin"
-        set(value) = prefs.edit().putString("remoteAdminPassword", value).apply()
+        get() = config.remoteAdminPassword
+        set(value) {
+            config.remoteAdminPassword = value
+            configManager.updateConfig(config)
+        }
 
     var enableWifiWakelock: Boolean
-        get() = prefs.getBoolean("enableWifiWakelock", true)
-        set(value) = prefs.edit().putBoolean("enableWifiWakelock", value).apply()
+        get() = config.enableWifiWakelock
+        set(value) {
+            config.enableWifiWakelock = value
+            configManager.updateConfig(config)
+        }
 
     var clearCacheOnStart: Boolean
-        get() = prefs.getBoolean("clearCacheOnStart", false)
-        set(value) = prefs.edit().putBoolean("clearCacheOnStart", value).apply()
+        get() = config.clearCacheOnStart
+        set(value) {
+            config.clearCacheOnStart = value
+            configManager.updateConfig(config)
+        }
 
     var enableOfflineCache: Boolean
-        get() = prefs.getBoolean("enableOfflineCache", true)
-        set(value) = prefs.edit().putBoolean("enableOfflineCache", value).apply()
+        get() = config.enableOfflineCache
+        set(value) {
+            config.enableOfflineCache = value
+            configManager.updateConfig(config)
+        }
+
+    var description: String
+        get() = config.description
+        set(value) {
+            config.description = value
+            configManager.updateConfig(config)
+        }
 }
