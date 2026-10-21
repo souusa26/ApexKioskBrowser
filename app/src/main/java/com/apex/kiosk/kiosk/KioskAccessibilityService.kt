@@ -35,8 +35,7 @@ class KioskAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {}
 
-    override fun onKeyEvent(event: KeyEvent?): Boolean {
-        if (event == null) return false
+    override fun onKeyEvent(event: KeyEvent): Boolean {
         val keyCode = event.keyCode
 
         // Bloqueia botões de volume se configurado no perfil veicular
