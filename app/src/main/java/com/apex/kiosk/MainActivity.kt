@@ -222,8 +222,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Interceptação dos Botões Físicos de Volume (Veicular)
-    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
-        if (event != null && !settings.enableVolumeButtons) {
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (!settings.enableVolumeButtons) {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP,
                 KeyEvent.KEYCODE_VOLUME_DOWN,
@@ -234,6 +234,7 @@ class MainActivity : AppCompatActivity() {
         }
         return super.dispatchKeyEvent(event)
     }
+
 
 
     // Bloqueia o botão Voltar do Android quando em Modo Quiosque
