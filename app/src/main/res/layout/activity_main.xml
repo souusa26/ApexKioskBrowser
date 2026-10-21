@@ -11,6 +11,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Container para exibição de Vídeo Fullscreen HTML5 -->
+    <FrameLayout
+        android:id="@+id/customViewContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone" />
+
     <!-- Barra de progresso discreta de carregamento -->
     <ProgressBar
         android:id="@+id/loadingProgress"
@@ -22,6 +30,26 @@
         android:max="100"
         android:progressTint="#00E5FF"
         android:visibility="gone" />
+
+    <!-- Área de Toque Oculta no Canto Superior Esquerdo (Gesto de 7 Toques) -->
+    <View
+        android:id="@+id/hotspotTopLeft"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="top|start"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="false" />
+
+    <!-- Área de Toque Oculta no Canto Inferior Direito (Gesto de 7 Toques) -->
+    <View
+        android:id="@+id/hotspotBottomRight"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom|end"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="false" />
 
     <!-- Botão Flutuante Circular de Desbloqueio Kiosk (Estilo Fully Kiosk) -->
     <FrameLayout
